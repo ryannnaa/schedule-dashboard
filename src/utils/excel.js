@@ -31,11 +31,22 @@ export function readExcelFile(file) {
  * {
  *   dayCol: number,
  *   dateCol: number,
- *   groups: [{ event: number, classroom: number, shifts: number[] }]
+ *   groups: [{ event: number, classroom: number, shifts: number[] }],
+ *   repeatCount: number,   // how many times the first group pattern repeats
+ *   repeatStride: number,  // column width of each repeated block
+ *   dateFrom: string|null, // ISO string - only include rows on or after this date
+ *   dateTo:   string|null, // ISO string - only include rows on or before this date
  * }
  */
 export function parseSchedule(sheetData, mapping) {
-  const [, ...rows] = sheetData // skip header row
+  const [, ...rows] = sheetData
+
+  const allGroups = buildGroups(mapping)
+
+  const dateFrom = mapping.dateFrom ? new Date(mapping.dateFrom) : null
+  const dateTo   = mapping.dateTo   ? new Date(mapping.dateTo)   : null
+  if (dateFrom) dateFrom.setHours(0, 0, 0, 0)
+  if (dateTo)   dateTo.setHours(23, 59, 59, 999)
 
   return rows
     .filter((row) => row.some((cell) => cell !== ''))
@@ -43,9 +54,9 @@ export function parseSchedule(sheetData, mapping) {
       const rawDate = row[mapping.dateCol]
       const date = normaliseDate(rawDate)
 
-      const events = mapping.groups
+      const events = allGroups
         .map((group) => ({
-          name: String(row[group.event] ?? '').trim(),
+          name:      String(row[group.event]     ?? '').trim(),
           classroom: String(row[group.classroom] ?? '').trim(),
           shifts: group.shifts
             .map((colIdx) => String(row[colIdx] ?? '').trim())
@@ -60,6 +71,40 @@ export function parseSchedule(sheetData, mapping) {
         events,
       }
     })
+    .filter((day) => {
+      if (!day.date) return true
+      if (dateFrom && day.date < dateFrom) return false
+      if (dateTo   && day.date > dateTo)   return false
+      return true
+    })
+}
+
+/**
+ * Expands the groups array using repeatCount + repeatStride so the user
+ * only has to define the first event block manually.
+ */
+function buildGroups(mapping) {
+  const { groups = [], repeatCount = 1, repeatStride = 0 } = mapping
+  if (!groups.length) return []
+
+  const base   = groups[0]
+  const manual = groups.slice(1)
+  const count  = Math.max(1, Number(repeatCount))
+  const stride = Number(repeatStride)
+
+  const generated = Array.from({ length: count }, (_, i) => {
+    if (i === 0) return base
+    const offset = i * stride
+    return {
+      ...base,
+      id:        'auto-' + i,
+      event:     base.event     !== '' ? Number(base.event)     + offset : '',
+      classroom: base.classroom !== '' ? Number(base.classroom) + offset : '',
+      shifts:    base.shifts.map((s) => Number(s) + offset),
+    }
+  })
+
+  return [...generated, ...manual]
 }
 
 /**
@@ -81,27 +126,20 @@ export function extractStaff(parsedDays) {
  */
 function normaliseDate(value) {
   if (!value && value !== 0) return null
-
-  // Already a JS Date (cellDates: true)
   if (value instanceof Date) return isNaN(value) ? null : value
-
-  // Excel serial number
   if (typeof value === 'number') {
     const d = XLSX.SSF.parse_date_code(value)
     if (d) return new Date(d.y, d.m - 1, d.d)
   }
-
-  // String — try parsing common formats
   if (typeof value === 'string') {
     const parsed = new Date(value)
     if (!isNaN(parsed)) return parsed
   }
-
   return null
 }
 
 /**
- * Returns column letter(s) from a zero-based index (0 → A, 25 → Z, 26 → AA).
+ * Returns column letter(s) from a zero-based index (0 = A, 25 = Z, 26 = AA).
  */
 export function colIndexToLetter(index) {
   let letter = ''

@@ -133,3 +133,85 @@ select:focus {
   background: var(--color-bg);
   color: var(--color-text-primary);
 }
+
+.numberInput,
+.dateInput {
+  width: 100%;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.875rem;
+  border: 0.5px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+}
+
+.numberInput:focus,
+.dateInput:focus {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+.optionalBadge {
+  font-size: 0.7rem;
+  font-weight: 500;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--color-border);
+  color: var(--color-text-secondary);
+  vertical-align: middle;
+  margin-left: 6px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.repeatPreview {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 0.5px solid var(--color-border);
+}
+
+.previewLabel {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.6rem;
+}
+
+.previewGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.previewChip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: var(--color-bg);
+  border: 0.5px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+}
+
+.previewNum {
+  color: var(--color-text-muted);
+  margin-right: 2px;
+}
+
+.previewCol {
+  display: inline-block;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--color-accent-light);
+  color: var(--color-accent-text);
+  font-family: monospace;
+  font-weight: 600;
+}
+
+.previewShift {
+  background: var(--color-success-light);
+  color: var(--color-success);
+}
