@@ -19,6 +19,7 @@ export default function App() {
     mapping, rawMapping, updateMapping,
     parsedDays, staffList, warnings,
     selectedStaff,
+    viewMode,
     reset,
   } = useSchedule()
 
@@ -182,7 +183,7 @@ export default function App() {
         {phase === PHASE.CALENDAR && (
           <section aria-labelledby="calendar-heading">
             <h2 id="calendar-heading" className={styles.stepHeading}>
-              {selectedStaff}'s calendar
+              {viewMode === 'personal' ? `${selectedStaff[0]}'s calendar` : viewMode === 'comparison' ? `${selectedStaff.join(' & ')} comparison` : 'Full calendar'}
             </h2>
             <p className={styles.stepDesc}>
               Calendar view coming in Phase 3.
@@ -190,7 +191,7 @@ export default function App() {
             <div className={styles.placeholder}>
               <p>📅 Calendar will render here</p>
               <p className={styles.placeholderSub}>
-                Selected staff: <strong>{selectedStaff}</strong>
+                Selected staff: <strong>{selectedStaff.length > 0 ? selectedStaff.join(', ') : 'All'}</strong>
               </p>
             </div>
             <div className={styles.actions}>

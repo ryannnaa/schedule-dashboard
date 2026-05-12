@@ -4,11 +4,50 @@
   gap: 1rem;
 }
 
+/* Mode indicator row */
+.modeRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.25rem;
+}
+
+.modeBadge {
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 0.5px solid var(--color-border-strong);
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+  transition: all 0.2s;
+}
+
+.modeBadgeActive {
+  background: var(--color-text-primary);
+  color: var(--color-surface);
+  border-color: var(--color-text-primary);
+}
+
+.modeArrow {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+/* Card */
 .card {
   background: var(--color-surface);
   border: 0.5px solid var(--color-border);
   border-radius: var(--radius-lg);
   padding: 1.25rem 1.5rem;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
 }
 
 .sectionTitle {
@@ -23,9 +62,31 @@
 .sectionDesc {
   font-size: 0.875rem;
   color: var(--color-text-secondary);
-  margin-bottom: 1.25rem;
 }
 
+.limitNote {
+  color: var(--color-warning);
+  font-weight: 500;
+}
+
+.clearBtn {
+  font-size: 0.8125rem;
+  padding: 4px 12px;
+  border-radius: var(--radius-sm);
+  border: 0.5px solid var(--color-border-strong);
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.clearBtn:hover {
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+}
+
+/* Pills */
 .pillGrid {
   display: flex;
   flex-wrap: wrap;
@@ -42,42 +103,81 @@
   border-radius: var(--radius-md);
   background: var(--color-bg);
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
+  transition: border-color 0.15s, background 0.15s, opacity 0.15s;
+  position: relative;
 }
 
-.pill:hover {
+.pill:hover:not(.pillDisabled) {
   border-color: var(--color-accent);
-  background: var(--color-accent-light);
 }
 
 .pillSelected {
-  border-color: var(--color-accent);
-  background: var(--color-accent-light);
-  box-shadow: 0 0 0 1.5px var(--color-accent);
+  box-shadow: 0 0 0 1.5px currentColor;
+}
+
+.pillDisabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.pillColourDot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
 }
 
 .pillInitials {
   font-size: 1rem;
   font-weight: 600;
-  color: var(--color-text-primary);
   font-family: monospace;
   letter-spacing: 0.05em;
-}
-
-.pillSelected .pillInitials {
-  color: var(--color-accent-text);
+  color: var(--color-text-muted);
 }
 
 .pillCount {
   font-size: 0.7rem;
   color: var(--color-text-muted);
+  opacity: 0.75;
+}
+
+.pillSelected .pillInitials {
+  color: inherit;
 }
 
 .pillSelected .pillCount {
-  color: var(--color-accent-text);
-  opacity: 0.8;
+  color: inherit;
 }
 
+/* Colour legend */
+.legend {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding-top: 0.875rem;
+  border-top: 0.5px solid var(--color-border);
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  font-family: monospace;
+}
+
+.legendSwatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Summary card */
 .summaryCard {
   background: var(--color-surface);
   border: 0.5px solid var(--color-border);
@@ -109,6 +209,10 @@
   line-height: 1;
 }
 
+.conflictValue {
+  color: var(--color-danger);
+}
+
 .summaryLabel {
   font-size: 0.75rem;
   color: var(--color-text-muted);
@@ -120,6 +224,13 @@
   height: 2.5rem;
   background: var(--color-border);
   flex-shrink: 0;
+}
+
+.fullViewNote {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  text-align: center;
+  padding: 0.25rem 0;
 }
 
 .confirmBtn {
