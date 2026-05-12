@@ -1,0 +1,62 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --color-bg: #f8f7f4;
+  --color-surface: #ffffff;
+  --color-border: #e5e3dc;
+  --color-border-strong: #ccc9c0;
+  --color-text-primary: #1a1a18;
+  --color-text-secondary: #5f5e5a;
+  --color-text-muted: #9c9b96;
+  --color-accent: #2563eb;
+  --color-accent-light: #eff6ff;
+  --color-accent-text: #1d4ed8;
+  --color-success: #15803d;
+  --color-success-light: #f0fdf4;
+  --color-warning: #b45309;
+  --color-warning-light: #fffbeb;
+  --color-danger: #dc2626;
+  --color-danger-light: #fef2f2;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  min-height: 100vh;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+select, input {
+  font-family: inherit;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #18181b;
+    --color-surface: #1f1f23;
+    --color-border: #2e2e35;
+    --color-border-strong: #3f3f46;
+    --color-text-primary: #fafaf9;
+    --color-text-secondary: #a1a09c;
+    --color-text-muted: #6b6b68;
+    --color-accent-light: #1e3a6e;
+    --color-accent-text: #93c5fd;
+    --color-success-light: #14532d;
+    --color-warning-light: #451a03;
+    --color-danger-light: #450a0a;
+  }
+}
