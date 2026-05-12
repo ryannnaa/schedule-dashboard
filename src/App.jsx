@@ -1,30 +1,37 @@
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
+import { useSchedule } from './context/ScheduleContext'
+import { useLocalStorage } from './hooks/useLocalStorage'
 import StepIndicator from './components/StepIndicator'
 import FileUploader from './components/FileUploader'
 import ColumnMapper from './components/ColumnMapper'
 import SchedulePreview from './components/SchedulePreview'
-import { parseSchedule, extractStaff } from './utils/excel'
-import { useLocalStorage } from './hooks/useLocalStorage'
+import StaffSelector from './components/StaffSelector'
 import styles from './App.module.css'
 
-const PHASE = { UPLOAD: 1, MAP: 2, PREVIEW: 3 }
+const PHASE = { UPLOAD: 1, MAP: 2, PREVIEW: 3, STAFF: 4, CALENDAR: 5 }
+
+// Steps shown in the indicator — calendar added for Phase 3
+const STEPS = ['Upload', 'Map columns', 'Preview', 'Select staff']
 
 export default function App() {
-  const [phase, setPhase] = useState(PHASE.UPLOAD)
-  const [fileInfo, setFileInfo] = useState(null)       // { file, data, sheetName }
-  const [mapping, setMapping] = useState(null)          // clean mapping for parsing
-  const [rawMapping, setRawMapping] = useState(null)    // raw state including empty selects
+  const {
+    fileInfo, loadFile,
+    mapping, rawMapping, updateMapping,
+    parsedDays, staffList, warnings,
+    selectedStaff,
+    reset,
+  } = useSchedule()
 
+  const [phase, setPhase] = useState(PHASE.UPLOAD)
   const [savedMapping, setSavedMapping, clearSavedMapping] = useLocalStorage('col-mapping', null)
 
   function handleFileLoaded(info) {
-    setFileInfo(info)
+    loadFile(info)
     setPhase(PHASE.MAP)
   }
 
-  function handleMappingChange(cleanMapping, raw) {
-    setMapping(cleanMapping)
-    setRawMapping(raw)
+  function handleMappingChange(clean, raw) {
+    updateMapping(clean, raw)
   }
 
   function handleSaveAndPreview() {
@@ -33,28 +40,18 @@ export default function App() {
   }
 
   function handleReset() {
-    setFileInfo(null)
-    setMapping(null)
-    setRawMapping(null)
+    reset()
     setPhase(PHASE.UPLOAD)
   }
-
-  const parsedDays = useMemo(() => {
-    if (!fileInfo || !mapping) return []
-    try {
-      return parseSchedule(fileInfo.data, mapping)
-    } catch {
-      return []
-    }
-  }, [fileInfo, mapping])
-
-  const staffList = useMemo(() => extractStaff(parsedDays), [parsedDays])
 
   const isMappingReady = mapping &&
     mapping.dayCol !== '' &&
     mapping.dateCol !== '' &&
-    mapping.groups.length > 0 &&
-    mapping.groups.some(g => g.event !== undefined)
+    mapping.groups?.length > 0 &&
+    mapping.groups.some(g => g.event !== undefined && g.event !== '')
+
+  // Indicator step: STAFF phase maps to step 4
+  const indicatorStep = Math.min(phase, STEPS.length)
 
   return (
     <div className={styles.page}>
@@ -78,8 +75,9 @@ export default function App() {
       </header>
 
       <main className={styles.main}>
-        <StepIndicator current={phase} />
+        <StepIndicator current={indicatorStep} steps={STEPS} />
 
+        {/* Step 1 — Upload */}
         {phase === PHASE.UPLOAD && (
           <section aria-labelledby="upload-heading">
             <h2 id="upload-heading" className={styles.stepHeading}>Upload your schedule</h2>
@@ -89,19 +87,19 @@ export default function App() {
             <FileUploader onFileLoaded={handleFileLoaded} />
             {savedMapping && (
               <p className={styles.savedNote}>
-                A previous column mapping was found and will be pre-loaded when you reach step 2.
+                A previous column mapping was found and will be pre-loaded in step 2.
                 <button className={styles.linkBtn} onClick={clearSavedMapping}>Clear it</button>
               </p>
             )}
           </section>
         )}
 
+        {/* Step 2 — Map columns */}
         {phase === PHASE.MAP && fileInfo && (
           <section aria-labelledby="map-heading">
             <h2 id="map-heading" className={styles.stepHeading}>Map your columns</h2>
             <p className={styles.stepDesc}>
               Tell the app which columns in <strong>{fileInfo.sheetName}</strong> hold each piece of information.
-              Add one event group per repeating block in your sheet.
             </p>
             <ColumnMapper
               headers={fileInfo.data[0] ?? []}
@@ -123,13 +121,30 @@ export default function App() {
           </section>
         )}
 
+        {/* Step 3 — Preview */}
         {phase === PHASE.PREVIEW && (
           <section aria-labelledby="preview-heading">
             <h2 id="preview-heading" className={styles.stepHeading}>Check your data</h2>
             <p className={styles.stepDesc}>
               {parsedDays.length} days parsed · {staffList.length} staff detected.
-              If anything looks wrong, go back and adjust the column mapping.
+              {warnings.length > 0 && (
+                <span className={styles.warningInline}> · {warnings.length} row{warnings.length !== 1 ? 's' : ''} with date issues</span>
+              )}
             </p>
+
+            {warnings.length > 0 && (
+              <div className={styles.warningBox} role="alert">
+                <strong>Date warnings</strong>
+                <ul className={styles.warningList}>
+                  {warnings.map((w, i) => (
+                    <li key={i}>
+                      Row with day "{w.day}" has an unreadable date ("{w.rawDate}") — {w.eventCount} event{w.eventCount !== 1 ? 's' : ''} may be excluded from the calendar.
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             <SchedulePreview parsedDays={parsedDays} staffList={staffList} />
             <div className={styles.actions}>
               <button className={styles.btnSecondary} onClick={() => setPhase(PHASE.MAP)}>
@@ -138,9 +153,49 @@ export default function App() {
               <button
                 className={styles.btnPrimary}
                 disabled={parsedDays.length === 0}
-                onClick={() => alert('Phase 2 coming soon — calendar view!')}
+                onClick={() => setPhase(PHASE.STAFF)}
               >
-                Build my calendar →
+                Select staff →
+              </button>
+            </div>
+          </section>
+        )}
+
+        {/* Step 4 — Select staff */}
+        {phase === PHASE.STAFF && (
+          <section aria-labelledby="staff-heading">
+            <h2 id="staff-heading" className={styles.stepHeading}>Select staff member</h2>
+            <p className={styles.stepDesc}>
+              Choose whose shifts to display on the calendar.
+              You can switch between staff members at any time.
+            </p>
+            <StaffSelector onConfirm={() => setPhase(PHASE.CALENDAR)} />
+            <div className={styles.actions}>
+              <button className={styles.btnSecondary} onClick={() => setPhase(PHASE.PREVIEW)}>
+                ← Back
+              </button>
+            </div>
+          </section>
+        )}
+
+        {/* Step 5 — Calendar (Phase 3 placeholder) */}
+        {phase === PHASE.CALENDAR && (
+          <section aria-labelledby="calendar-heading">
+            <h2 id="calendar-heading" className={styles.stepHeading}>
+              {selectedStaff}'s calendar
+            </h2>
+            <p className={styles.stepDesc}>
+              Calendar view coming in Phase 3.
+            </p>
+            <div className={styles.placeholder}>
+              <p>📅 Calendar will render here</p>
+              <p className={styles.placeholderSub}>
+                Selected staff: <strong>{selectedStaff}</strong>
+              </p>
+            </div>
+            <div className={styles.actions}>
+              <button className={styles.btnSecondary} onClick={() => setPhase(PHASE.STAFF)}>
+                ← Change staff
               </button>
             </div>
           </section>
