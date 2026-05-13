@@ -9,7 +9,7 @@ export function readExcelFile(file) {
     const reader = new FileReader()
     reader.onload = (e) => {
       try {
-        const workbook = XLSX.read(e.target.result, { type: 'array', cellDates: true })
+        const workbook = XLSX.read(e.target.result, { type: 'array' })
         const sheetName = workbook.SheetNames[0]
         const sheet = workbook.Sheets[sheetName]
         const data = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' })
@@ -126,7 +126,12 @@ export function extractStaff(parsedDays) {
  */
 function normaliseDate(value) {
   if (!value && value !== 0) return null
-  if (value instanceof Date) return isNaN(value) ? null : value
+  // With cellDates disabled, SheetJS never produces Date objects.
+  // This branch is a safety fallback only.
+  if (value instanceof Date) {
+    if (isNaN(value)) return null
+    return new Date(value.getFullYear(), value.getMonth(), value.getDate())
+  }
   if (typeof value === 'number') {
     const d = XLSX.SSF.parse_date_code(value)
     if (d) return new Date(d.y, d.m - 1, d.d)

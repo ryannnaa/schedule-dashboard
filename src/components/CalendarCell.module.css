@@ -4,6 +4,8 @@
   border-bottom: 0.5px solid var(--color-border);
   padding: 6px;
   min-height: 100px;
+  min-width: 0;          /* prevents cell blowing out its 1fr column */
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   gap: 3px;

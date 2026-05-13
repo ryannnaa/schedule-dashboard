@@ -76,7 +76,7 @@ export default function App() {
         </div>
       </header>
 
-      <main className={styles.main}>
+      <main className={phase === PHASE.CALENDAR ? styles.mainWide : styles.main}>
         <StepIndicator current={indicatorStep} steps={STEPS} />
 
         {/* Step 1 — Upload */}

@@ -3,7 +3,8 @@ import styles from './EventChip.module.css'
 
 /**
  * Compact event row for inside a calendar cell.
- * Shows event name truncated + shift slot chips colour-coded by person.
+ * Shows classroom (short code) instead of event name for better space allocation.
+ * Full event name + details are available in the DayModal on click.
  */
 export default function EventChip({ event }) {
   const { viewMode, staffColourMap, selectedStaff } = useSchedule()
@@ -11,7 +12,7 @@ export default function EventChip({ event }) {
 
   return (
     <div className={styles.chip}>
-      <span className={styles.eventName}>{event.name || '—'}</span>
+      <span className={styles.eventName}>{event.classroom || event.name || '—'}</span>
       <div className={styles.shifts}>
         {event.shifts.map((initial, i) => {
           const key = initial.toUpperCase()

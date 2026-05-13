@@ -11,13 +11,14 @@
 }
 
 .eventName {
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   color: var(--color-text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   flex: 1;
   min-width: 0;
+  max-width: 60px;   /* cap venue label so badges always have room */
 }
 
 .shifts {
