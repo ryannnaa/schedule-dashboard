@@ -46,6 +46,7 @@ export function generateIcs(filteredDays, staffInitial) {
     day.events.forEach((event, eventIndex) => {
       // A person may appear in multiple shift slots within the same event block
       event.shifts.forEach((initial, slotIndex) => {
+        if (!initial) return
         if (initial.toUpperCase() !== staffInitial.toUpperCase()) return
 
         const shift = SHIFT_TIMES[slotIndex]

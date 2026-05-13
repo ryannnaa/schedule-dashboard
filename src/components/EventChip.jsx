@@ -15,6 +15,7 @@ export default function EventChip({ event }) {
       <span className={styles.eventName}>{event.classroom || event.name || '—'}</span>
       <div className={styles.shifts}>
         {event.shifts.map((initial, i) => {
+          if (!initial) return null
           const key = initial.toUpperCase()
           const isConflict = event.conflicts?.has(key)
           const colour = staffColourMap[initial] ?? staffColourMap[
