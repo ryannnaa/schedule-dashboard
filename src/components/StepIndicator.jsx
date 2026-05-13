@@ -1,13 +1,12 @@
 import styles from './StepIndicator.module.css'
 
-const STEPS = ['Upload', 'Map columns', 'Preview']
-
-export default function StepIndicator({ current }) {
+// Accepts a dynamic `steps` array so phases can extend it without touching this component
+export default function StepIndicator({ current, steps }) {
   return (
     <nav className={styles.nav} aria-label="Progress">
-      {STEPS.map((label, index) => {
+      {steps.map((label, index) => {
         const step = index + 1
-        const isDone = step < current
+        const isDone   = step < current
         const isActive = step === current
         return (
           <div key={label} className={styles.stepWrapper}>
@@ -23,7 +22,7 @@ export default function StepIndicator({ current }) {
               </div>
               <span className={styles.label}>{label}</span>
             </div>
-            {index < STEPS.length - 1 && <div className={styles.line} aria-hidden="true" />}
+            {index < steps.length - 1 && <div className={styles.line} aria-hidden="true" />}
           </div>
         )
       })}
