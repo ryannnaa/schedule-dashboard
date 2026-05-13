@@ -7,6 +7,7 @@ import ColumnMapper from './components/ColumnMapper'
 import SchedulePreview from './components/SchedulePreview'
 import StaffSelector from './components/StaffSelector'
 import CalendarView from './components/CalendarView'
+import ExportButton from './components/ExportButton'
 import styles from './App.module.css'
 
 const PHASE = { UPLOAD: 1, MAP: 2, PREVIEW: 3, STAFF: 4, CALENDAR: 5 }
@@ -194,6 +195,7 @@ export default function App() {
               <button className={styles.btnSecondary} onClick={() => setPhase(PHASE.STAFF)}>
                 ← Change staff
               </button>
+              <ExportButton />
             </div>
           </section>
         )}

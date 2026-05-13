@@ -58,11 +58,12 @@ export function parseSchedule(sheetData, mapping) {
         .map((group) => ({
           name:      String(row[group.event]     ?? '').trim(),
           classroom: String(row[group.classroom] ?? '').trim(),
+          // Keep empty strings so slot indices are preserved.
+          // e.g. ['', 'YY', ''] stays as-is so slotIndex 1 = Shift 2.
           shifts: group.shifts
-            .map((colIdx) => String(row[colIdx] ?? '').trim())
-            .filter(Boolean),
+            .map((colIdx) => String(row[colIdx] ?? '').trim()),
         }))
-        .filter((e) => e.name || e.shifts.length > 0)
+        .filter((e) => e.name || e.shifts.some(Boolean))
 
       return {
         day: String(row[mapping.dayCol] ?? '').trim(),

@@ -76,6 +76,7 @@ export default function DayModal({ date, dayData, onClose }) {
                     <span className={styles.noShifts}>No shifts assigned</span>
                   ) : (
                     event.shifts.map((initial, si) => {
+                      if (!initial) return null
                       const key = initial.toUpperCase()
                       const isConflict = event.conflicts?.has(key)
                       const colour = staffColourMap[initial] ??
