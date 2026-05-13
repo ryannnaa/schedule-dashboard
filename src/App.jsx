@@ -6,6 +6,7 @@ import FileUploader from './components/FileUploader'
 import ColumnMapper from './components/ColumnMapper'
 import SchedulePreview from './components/SchedulePreview'
 import StaffSelector from './components/StaffSelector'
+import CalendarView from './components/CalendarView'
 import styles from './App.module.css'
 
 const PHASE = { UPLOAD: 1, MAP: 2, PREVIEW: 3, STAFF: 4, CALENDAR: 5 }
@@ -75,7 +76,7 @@ export default function App() {
         </div>
       </header>
 
-      <main className={styles.main}>
+      <main className={phase === PHASE.CALENDAR ? styles.mainWide : styles.main}>
         <StepIndicator current={indicatorStep} steps={STEPS} />
 
         {/* Step 1 — Upload */}
@@ -179,21 +180,16 @@ export default function App() {
           </section>
         )}
 
-        {/* Step 5 — Calendar (Phase 3 placeholder) */}
+        {/* Step 5 — Calendar */}
         {phase === PHASE.CALENDAR && (
           <section aria-labelledby="calendar-heading">
             <h2 id="calendar-heading" className={styles.stepHeading}>
               {viewMode === 'personal' ? `${selectedStaff[0]}'s calendar` : viewMode === 'comparison' ? `${selectedStaff.join(' & ')} comparison` : 'Full calendar'}
             </h2>
             <p className={styles.stepDesc}>
-              Calendar view coming in Phase 3.
+              Click any day to see full event details.
             </p>
-            <div className={styles.placeholder}>
-              <p>📅 Calendar will render here</p>
-              <p className={styles.placeholderSub}>
-                Selected staff: <strong>{selectedStaff.length > 0 ? selectedStaff.join(', ') : 'All'}</strong>
-              </p>
-            </div>
+            <CalendarView />
             <div className={styles.actions}>
               <button className={styles.btnSecondary} onClick={() => setPhase(PHASE.STAFF)}>
                 ← Change staff
