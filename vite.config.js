@@ -5,5 +5,5 @@ import react from '@vitejs/plugin-react'
 // e.g. if your repo is github.com/yourname/my-app, set base: '/my-app/'
 export default defineConfig({
   plugins: [react()],
-  base: '/schedule-dashboard/',
+  base: '/',
 })
