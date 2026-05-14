@@ -1,149 +1,144 @@
 # Project Phases
 
-This document tracks the planned development of Shift Scheduler, broken into discrete phases that can be built and tested independently. Each phase builds on the previous one.
+This document tracks the development of Schedule Dashboard, broken into discrete phases. Each phase builds on the previous one.
 
 ---
 
 ## Phase 1 — Excel Upload & Column Mapper
 
-**Goal:** Get data from the Excel sheet into the app in a structured, reliable way.
+**Status:** ✅ Complete
 
-**Status:** 🔵 In progress
-
-### Features
-- Drag-and-drop or click-to-browse `.xlsx` file upload
-- Automatic sheet parsing using SheetJS
-- Column header detection and display in dropdown selectors
-- Dynamic column mapper UI:
-  - Base columns: Day of week, Date
-  - Repeating event groups: Event Name, Classroom, Shift slots (up to 3)
-  - Ability to add or remove event groups to match the sheet's structure
-- Parsed data preview (first 5 rows) before proceeding
-- Auto-detection of all unique staff initials across all shift columns
-- Column mapping saved to `localStorage` so it persists between sessions
+### What was built
+- Drag-and-drop `.xlsx` file upload with loading state and error handling
+- Column mapper UI with dropdowns labelled by Excel header text
+- Base columns (Day, Date) and repeating event group structure (Event Name, Classroom, up to 3 Shift slots)
+- Repeat pattern — define one event block template, set a count and stride to auto-generate the rest (up to 9 blocks)
+- Live column preview showing which columns each auto-generated block will read
+- Optional date range filter to limit parsed rows to a specific period
+- Parsed data preview showing the first 6 rows and all detected staff initials
+- Column mapping persisted to `localStorage` between sessions
+- Step indicator (Upload → Map columns → Preview)
 
 ### Key decisions
-- The mapper is intentionally generic — it does not hardcode column letters. This makes the app reusable for other scheduling sheets with different structures.
-- Each repeating block of columns is called an "event group". The user defines how many groups their sheet has.
-
-### Acceptance criteria
-- [ ] User can upload any `.xlsx` file
-- [ ] All columns are listed in the mapper dropdowns, labelled with their header text
-- [ ] User can define one or more event groups
-- [ ] Preview table correctly reflects the column mapping
-- [ ] All staff initials are detected and displayed
-- [ ] Mapping persists on page refresh
+- Column indices are never hardcoded — the mapper stores zero-based positions making the app reusable for any sheet structure
+- The repeat stride pattern means users only configure one block regardless of how many repeat across the row
 
 ---
 
-## Phase 2 — Data Parser & State Management
+## Phase 2 — State Management & Staff Selection
 
-**Goal:** Transform the raw mapped data into a clean, normalised schedule structure that the rest of the app can consume.
+**Status:** ✅ Complete
 
-**Status:** ⚪ Planned
-
-### Features
-- Parse each Excel row into a structured day object:
-  ```json
-  {
-    "date": "2026-05-11",
-    "dayOfWeek": "Mon",
-    "events": [
-      {
-        "name": "Morning Class",
-        "classroom": "Room A",
-        "shifts": ["RT", "JL", ""]
-      }
-    ]
-  }
-  ```
-- Date normalisation — handle multiple date formats from Excel (serial numbers, text strings, ISO dates)
-- Validation layer — flag rows with missing dates, unrecognised initials, or empty event names
-- Global app state using React Context (schedule data, column mapping, selected staff member)
-- Staff roster derived from parsed data (sorted, deduplicated list of all initials found)
+### What was built
+- `ScheduleContext` — global React Context holding file, mapping, parsed schedule, staff roster, selection state, view mode, colour assignment, conflict detection, and filtered days
+- Three view modes derived from selection count:
+  - **Full** — no staff selected, all events visible
+  - **Personal** — 1 person selected, only their shifts shown
+  - **Comparison** — 2–3 people selected, shifts shown side by side
+- Multi-select staff picker with 3-person cap, colour-coded pills (blue → green → yellow in selection order)
+- Per-slot conflict detection — flags staff appearing more than once in the same shift slot position across all event blocks in a row
+- Conflict count displayed in the summary card (days with conflicts, not individual events)
+- `filteredDays` as the single output consumed by the calendar — always shaped correctly for the active view mode with conflict annotations attached
+- Step 4 added to the flow (Select staff) before the calendar
 
 ### Key decisions
-- Parsing is separated from the UI layer so it can be unit tested independently.
-- The parsed schedule is the single source of truth for Phase 3 and beyond.
-
-### Acceptance criteria
-- [ ] Every row is correctly parsed into a day object
-- [ ] Dates from Excel serial format are correctly converted
-- [ ] Rows with data issues are flagged with a visible warning, not silently dropped
-- [ ] Staff roster is complete and sorted
-- [ ] Selecting a different file resets state cleanly
+- `selectedStaff` is an ordered array (not a Set) to preserve colour assignment stability
+- Conflict detection runs at the day level across all event blocks — per-block detection would miss cross-block double-bookings
+- `lastGoodDays` ref in context preserves the last valid parse result so mid-edit mapper changes don't blank the calendar
 
 ---
 
-## Phase 3 — Personal Calendar View
+## Phase 3 — Calendar View
 
-**Goal:** Display the parsed schedule as a monthly calendar, filtered to a selected staff member.
+**Status:** ✅ Complete
 
-**Status:** ⚪ Planned
-
-### Features
-- Standard monthly calendar grid (7 columns, Mon–Sun header)
-- Each day cell shows:
-  - Events the selected person is scheduled for
-  - Event name, classroom, and which shift slot they are in
-  - A muted view of other events they are not part of (for context)
-- Staff selector — dropdown or pill buttons to switch between team members
-- Month navigation — previous / next arrows, current month label
-- Today's date highlighted
-- Empty days (weekends or holidays) displayed cleanly
-- Responsive layout — readable on tablet and desktop
+### What was built
+- `CalendarView` — monthly grid with `dayMap` keyed by `YYYY-MM-DD` for O(1) cell lookups
+- `CalendarHeader` — month navigation and Mon/Sun week start toggle, preference saved to `localStorage`
+- `CalendarCell` — compact day cell showing classroom code, up to 3 event chips, "+N more" badge, ⚠ conflict flag
+- `EventChip` — compact event row with classroom label and colour-coded shift badges
+- `DayModal` — full detail overlay on cell click; shows event name, classroom, per-slot breakdown (Slot 1/2/3), conflict warnings; closes on backdrop click or Escape
+- Wide container (`max-width: 1280px`) for the calendar step, narrower (`760px`) for setup steps
+- Today's date highlighted; days outside the current month dimmed
+- Shift slot index preservation fix — removed `.filter(Boolean)` from shift parsing so empty slots retain their position
 
 ### Key decisions
-- The calendar only shows one person at a time, keeping it scannable at a glance.
-- Non-assigned events are shown at reduced opacity rather than hidden, so the user still has full context of the day.
-
-### Acceptance criteria
-- [ ] Calendar renders correctly for the month derived from the uploaded data
-- [ ] Selecting different initials updates the calendar instantly
-- [ ] Days with no shifts for the selected person are visually distinct
-- [ ] Month navigation works and does not break on edge cases (e.g. months with 28 or 31 days)
-- [ ] The calendar is readable on a 768px wide screen
+- Classroom shown in compact cell (shorter than event names), full event name in modal
+- `cellDates: false` in SheetJS — serial number dates are timezone-agnostic, preventing off-by-one date errors in UTC+ timezones
+- `min-width: 0` on cells enforces equal column widths regardless of content
 
 ---
 
 ## Phase 4 — Calendar Export (.ics)
 
-**Goal:** Let staff export their personal shift schedule directly into their calendar app of choice.
+**Status:** ✅ Complete
 
-**Status:** ⚪ Planned
+### What was built
+- `ics.js` — generates a standards-compliant `.ics` file from a staff member's filtered days
+- Each assigned shift slot becomes a separate timed calendar event with correct start/end times
+- `VTIMEZONE` block for `Asia/Singapore` embedded in the file for correct time interpretation across all calendar apps
+- `ExportButton` — rendered in the calendar step actions row, adapts label to view mode, exports one file per person in comparison mode, turns green with import instructions after download
+- Stable UIDs per event so re-imports don't create duplicates
+- `TRANSP:OPAQUE` so events show as busy blocks
 
-### Features
-- Generate a standards-compliant `.ics` file containing only the selected person's shifts
-- Each shift becomes a calendar event with:
-  - Title: Event name + classroom (e.g. "Morning Class — Room A")
-  - Date: Correct calendar date
-  - Description: Shift slot and co-workers scheduled for the same event
-- One-click download button on the calendar view
-- Option to export the full month or a selected date range
+### Shift times
+
+| Slot | Start | End |
+|---|---|---|
+| Shift 1 | 8:00am | 9:30am |
+| Shift 2 | 12:30pm | 2:00pm |
+| Shift 3 | 4:30pm | 6:00pm |
+
+Defined in `SHIFT_TIMES` in `src/utils/ics.js`.
+
+---
+
+## Phase 5 — Backend & Saved Mappings
+
+**Status:** ✅ Complete
+
+### What was built
+- Supabase Postgres database with a `mappings` table storing named column configurations as JSONB
+- Row Level Security with public read/write policies (auth-free, global shared mappings)
+- `supabase.js` — Supabase JS client initialised from `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`
+- `useMappings` hook — fetch on mount, upsert by name (overwrite if name exists), delete by id
+- `MappingManager` — rendered at the top of the column mapper step:
+  - Lists all saved mappings with name, date saved, Load and Delete buttons
+  - Delete confirmation inline (no modal)
+  - Name input + Save button to persist the current mapping
+  - Loading a saved mapping instantly repopulates all column selects
+- Deployment to Vercel with environment variables for Supabase credentials
+
+### Database schema
+
+```sql
+create table mappings (
+  id         uuid primary key default gen_random_uuid(),
+  name       text not null unique,
+  mapping    jsonb not null,
+  created_at timestamptz default now()
+);
+
+grant select, insert, update, delete on public.mappings to anon;
+grant usage on schema public to anon;
+```
 
 ### Key decisions
-- `.ics` is supported by Google Calendar, Apple Calendar, and Outlook with no plugins required — maximising compatibility without building integrations.
-- The file is generated entirely client-side; no data is sent to any server.
-
-### Acceptance criteria
-- [ ] Generated `.ics` file imports correctly into Google Calendar
-- [ ] Generated `.ics` file imports correctly into Apple Calendar
-- [ ] Event titles and dates are accurate
-- [ ] Export respects the currently selected staff member
-- [ ] No data leaves the browser
+- Schema designed for easy auth migration — adding a `user_id` column and enabling per-user RLS policies is the only change needed to move from shared to per-user mappings
+- Upsert by name means saving with an existing name updates it rather than creating a duplicate
+- Legacy Supabase anon JWT key (`eyJ...`) required for PostgREST access — publishable keys (`sb_publishable_...`) are not yet fully supported by the JS client for direct database queries
 
 ---
 
 ## Future Ideas
 
-These are not committed phases but may be considered after Phase 4 is complete.
-
 | Idea | Description |
 |---|---|
-| **Saved mappings** | Name and save column mappings for different sheet templates, switchable from a dropdown |
-| **Multi-person view** | Side-by-side comparison of two staff members' schedules |
-| **Conflict detection** | Highlight days where a person is double-booked or a shift slot is unfilled |
-| **Print view** | Clean single-page print stylesheet for the calendar |
+| **Per-user mappings** | Add Supabase Auth (magic link) and `user_id` to the mappings table so each user manages their own saved configs |
+| **Conflict highlighting in calendar** | Visually distinguish conflicted days in the grid, not just in the modal |
+| **Print view** | Clean single-page print stylesheet for the monthly calendar |
+| **Multi-sheet support** | Allow the user to select which sheet to read from multi-tab Excel files |
+| **Adjustable shift times** | Let users configure shift slot times in the UI rather than editing `ics.js` |
 | **Mobile app** | Wrap the app in Capacitor for iOS/Android distribution |
 
 ---
@@ -161,13 +156,6 @@ npm run dev
 npm run build
 ```
 
-### Deploying to GitHub Pages
-```bash
-npm run deploy
-```
-
-> Remember to set the correct `base` in `vite.config.js` before deploying (see README).
-
 ### Branch convention
 | Branch | Purpose |
 |---|---|
@@ -176,3 +164,4 @@ npm run deploy
 | `phase/2-parser` | Phase 2 development |
 | `phase/3-calendar` | Phase 3 development |
 | `phase/4-export` | Phase 4 development |
+| `phase/5-backend` | Phase 5 development |
