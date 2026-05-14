@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { colIndexToLetter } from '../utils/excel'
+import MappingManager from './MappingManager'
 import styles from './ColumnMapper.module.css'
 
 const EMPTY = ''
@@ -62,8 +63,8 @@ export default function ColumnMapper({ headers, savedMapping, onMappingChange })
 
   function setDayCol(v)       { setDayColState(v);       emit({ dayCol: v }) }
   function setDateCol(v)      { setDateColState(v);      emit({ dateCol: v }) }
-  function setRepeatCount(v)  { setRepeatCountState(v);  emit({ repeatCount: v }) }
-  function setRepeatStride(v) { setRepeatStrideState(v); emit({ repeatStride: v }) }
+  function setRepeatCount(v)  { setRepeatCountState(v);  emitDebounced({ repeatCount: v }) }
+  function setRepeatStride(v) { setRepeatStrideState(v); emitDebounced({ repeatStride: v }) }
   function setDateFrom(v)     { setDateFromState(v);     emit({ dateFrom: v }) }
   function setDateTo(v)       { setDateToState(v);       emit({ dateTo: v }) }
 
@@ -107,8 +108,34 @@ export default function ColumnMapper({ headers, savedMapping, onMappingChange })
       })
     : []
 
+  // When user loads a saved mapping, populate all state from it
+  function handleLoadMapping(loaded) {
+    const d = loaded.dayCol  !== undefined ? loaded.dayCol  : EMPTY
+    const dt = loaded.dateCol !== undefined ? loaded.dateCol : EMPTY
+    const g  = loaded.groups?.length ? loaded.groups : [makeGroup()]
+    const rc = loaded.repeatCount  ?? 1
+    const rs = loaded.repeatStride ?? 5
+    const df = loaded.dateFrom ?? ''
+    const dto = loaded.dateTo  ?? ''
+    setDayColState(d)
+    setDateColState(dt)
+    setGroupsState(g)
+    setRepeatCountState(rc)
+    setRepeatStrideState(rs)
+    setDateFromState(df)
+    setDateToState(dto)
+    emit({ dayCol: d, dateCol: dt, groups: g, repeatCount: rc, repeatStride: rs, dateFrom: df, dateTo: dto })
+  }
+
+  const currentRawMapping = { dayCol, dateCol, groups, repeatCount, repeatStride, dateFrom, dateTo }
+
   return (
     <div className={styles.wrapper}>
+
+      <MappingManager
+        currentMapping={currentRawMapping}
+        onLoad={handleLoadMapping}
+      />
 
       {/* Base columns */}
       <section className={styles.card}>
